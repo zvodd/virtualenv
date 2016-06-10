@@ -995,6 +995,30 @@ def path_locations(home_dir):
         bin_dir = join(home_dir, 'bin')
     return home_dir, lib_dir, inc_dir, bin_dir
 
+def cased_preserved_path(origpath):
+    """
+    Returns case preserved path name from
+     case insensive path name, by walking directories.
+
+    Top-most directory is not case perserved.
+    """
+    curpath = origpath
+    lastpath = None
+    pathlist = []
+    while curpath != lastpath:
+        parent = os.path.dirname(curpath)
+        lastpath = os.path.dirname(parent)
+        cbase = os.path.basename(curpath)
+
+        for thedir in os.listdir(parent):
+            if thedir.lower() == cbase.lower():
+                pathlist.append(thedir)
+                curpath = parent
+                break
+    pathlist.append(lastpath)
+
+    pathlist = list(reversed(pathlist))
+    return os.path.join(*pathlist)
 
 def change_prefix(filename, dst_prefix):
     prefixes = [sys.prefix]
@@ -1008,6 +1032,10 @@ def change_prefix(filename, dst_prefix):
             os.path.join("~", ".local", "lib","python", sys.version[:3], "site-packages"),
             # System Python 2.7 on OSX Mountain Lion
             os.path.join("~", "Library", "Python", sys.version[:3], "lib", "python", "site-packages")))
+
+    # On Windows, get case sensitive path strings from file system
+    if is_win:
+        prefixes = [cased_preserved_path(prefix) for prefix in prefixes]
 
     if hasattr(sys, 'real_prefix'):
         prefixes.append(sys.real_prefix)
